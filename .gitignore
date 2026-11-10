@@ -1,0 +1,7 @@
+# Exact home/work coordinates and other private config
+private/
+
+# Tooling
+node_modules/
+.netlify/
+dist/

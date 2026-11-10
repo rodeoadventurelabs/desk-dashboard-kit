@@ -1,0 +1,104 @@
+diff --git a/dashboard/kiosk/AndroidManifest.xml b/dashboard/kiosk/AndroidManifest.xml
+index c2059df..89043d5 100644
+--- a/dashboard/kiosk/AndroidManifest.xml
++++ b/dashboard/kiosk/AndroidManifest.xml
+@@ -30,7 +30,7 @@
+     <activity
+         android:name=".MainActivity"
+         android:launchMode="singleTask"
+-        android:screenOrientation="sensorLandscape"
++        android:screenOrientation="sensorPortrait"
+         android:configChanges="orientation|screenSize|keyboardHidden|keyboard">
+       <intent-filter>
+         <action android:name="android.intent.action.MAIN" />
+diff --git a/dashboard/kiosk/src/com/wesbos/homehq/MainActivity.java b/dashboard/kiosk/src/com/wesbos/homehq/MainActivity.java
+index eed40a9..5af19d0 100644
+--- a/dashboard/kiosk/src/com/wesbos/homehq/MainActivity.java
++++ b/dashboard/kiosk/src/com/wesbos/homehq/MainActivity.java
+@@ -72,7 +72,8 @@ import java.util.Map;
+  */
+ public class MainActivity extends Activity {
+   static final String TAG = "HomeHQ";
+-  static final String DEFAULT_URL = "https://home-dashboard.wesbos.workers.dev/";
++  // Rodeo: our dashboard (no key here; the keyed URL is saved on the frame with --es url).
++  static final String DEFAULT_URL = "https://YOUR-SITE.netlify.app/";
+   static final String PREFS = "kiosk";
+   static final String PREF_URL = "url";
+   static final String PREF_MENU_BUTTON = "menu_button";
+diff --git a/dashboard/kiosk/src/com/wesbos/homehq/NavigationService.java b/dashboard/kiosk/src/com/wesbos/homehq/NavigationService.java
+index 8bc1bf9..7f61c93 100644
+--- a/dashboard/kiosk/src/com/wesbos/homehq/NavigationService.java
++++ b/dashboard/kiosk/src/com/wesbos/homehq/NavigationService.java
+@@ -102,15 +102,53 @@ public class NavigationService extends AccessibilityService {
+         LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+   }
+ 
++  // Rodeo change: outside the dashboard the bar stays hidden. An invisible tap zone sits in the
++  // bottom-right corner; 5 quick taps there show Back / Dashboard for 15 seconds.
++  static final int TAPS_TO_SHOW = 5;
++  static final long TAP_WINDOW_MS = 3000, SHOW_MS = 15000;
++  private View hotspot;
++  private WindowManager.LayoutParams hotspotPosition;
++  private boolean hotspotAttached, revealed;
++  private int taps;
++  private long firstTap;
++  private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
++  private final Runnable hideBar = () -> { revealed = false; updateVisibility(); };
++
++  private void ensureHotspot() {
++    if (hotspot != null) return;
++    hotspot = new View(this);
++    hotspot.setBackgroundColor(Color.TRANSPARENT);
++    hotspotPosition = new WindowManager.LayoutParams(dp(120), dp(120),
++        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
++        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
++        PixelFormat.TRANSLUCENT);
++    hotspotPosition.gravity = Gravity.BOTTOM | Gravity.RIGHT;
++    hotspotPosition.setTitle("Home HQ navigation tap zone");
++    hotspot.setOnTouchListener((view, event) -> {
++      if (event.getActionMasked() != MotionEvent.ACTION_DOWN) return true;
++      long now = android.os.SystemClock.uptimeMillis();
++      if (taps == 0 || now - firstTap > TAP_WINDOW_MS) { taps = 0; firstTap = now; }
++      if (++taps >= TAPS_TO_SHOW) {
++        taps = 0;
++        revealed = true;
++        updateVisibility();
++        handler.removeCallbacks(hideBar);
++        handler.postDelayed(hideBar, SHOW_MS);
++      }
++      return true;
++    });
++  }
++
+   private void updateVisibility() {
+     if (bar == null) return;
+-    if (!dashboardVisible && !attached) {
+-      windows.addView(bar, position);
+-      attached = true;
+-    } else if (dashboardVisible && attached) {
+-      windows.removeView(bar);
+-      attached = false;
+-    }
++    ensureHotspot();
++    boolean wantBar = !dashboardVisible && revealed;
++    boolean wantHotspot = !dashboardVisible && !revealed;
++    if (wantBar && !attached) { windows.addView(bar, position); attached = true; }
++    if (!wantBar && attached) { windows.removeView(bar); attached = false; }
++    if (wantHotspot && !hotspotAttached) { windows.addView(hotspot, hotspotPosition); hotspotAttached = true; }
++    if (!wantHotspot && hotspotAttached) { windows.removeView(hotspot); hotspotAttached = false; }
++    if (dashboardVisible) { revealed = false; handler.removeCallbacks(hideBar); }
+   }
+ 
+   private int dp(int value) {
+@@ -121,8 +159,11 @@ public class NavigationService extends AccessibilityService {
+   @Override public void onAccessibilityEvent(AccessibilityEvent event) { }
+   @Override public void onInterrupt() { }
+   @Override public void onDestroy() {
++    handler.removeCallbacks(hideBar);
+     if (attached) windows.removeView(bar);
+     attached = false;
++    if (hotspotAttached) windows.removeView(hotspot);
++    hotspotAttached = false;
+     if (instance == this) instance = null;
+     super.onDestroy();
+   }

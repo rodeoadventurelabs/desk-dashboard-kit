@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=800, initial-scale=1">
+<title>Desk Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<!-- Portrait 800x1280: header, Strava, map, 10-day strip, then events | commute + tasks. -->
+<div id="stage">
+  <div id="topbar" class="topbar hidden"></div>
+
+  <div id="main" class="rows">
+    <!-- 1. Clock and current conditions over a living sky (js/sky.js) -->
+    <div class="head sky" id="head">
+      <div class="clock-block">
+        <div class="clock"><span id="clock">--:--</span><span id="ampm" class="ampm"></span></div>
+        <div id="date" class="date"></div>
+      </div>
+      <div id="now" class="now"></div>
+    </div>
+
+    <!-- 2. Strava strip -->
+    <div id="strava" class="card strava"></div>
+
+    <!-- 3. Radar map -->
+    <div id="radar-card" class="card radar">
+      <div id="map" class="map"></div>
+      <div id="aqi-pill" class="pill pill-tl"></div>
+      <div id="wind-pill" class="pill pill-tr"></div>
+      <div class="map-btns">
+        <!-- Drawn icons: the frame's Android 6 font has no glyph for these symbols. -->
+        <button id="map-expand" class="map-btn" aria-label="Expand map"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" fill="none" stroke="#ececea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button id="map-home" class="map-btn" aria-label="Back to home view"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10" fill="none" stroke="#ececea" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+      </div>
+      <div id="radar-stamp" class="radar-stamp"></div>
+    </div>
+
+    <!-- 4. 10-day forecast strip -->
+    <div class="card forecast"><div id="forecast" class="fc"></div></div>
+
+    <!-- 5. Events | commute + tasks -->
+    <div class="lower">
+      <div class="card card-events">
+        <div class="card-title">Today</div>
+        <div id="events"></div>
+      </div>
+      <div class="lower-right">
+        <div id="commute" class="card commute"></div>
+        <div class="card card-tasks">
+          <div class="card-title">Tasks</div>
+          <div id="tasks"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay hidden"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/mock-data.js"></script>
+<script src="js/map.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

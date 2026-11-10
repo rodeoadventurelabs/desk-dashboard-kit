@@ -1,0 +1,10 @@
+# Desk Dashboard: static page in site/, server code in netlify/functions/.
+[build]
+  publish = "site"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Caching for /api/* is set by each function: private data and OAuth send no-store,
+# and the public wind relay (/api/wind) allows a short CDN cache.

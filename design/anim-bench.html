@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=800, initial-scale=1">
+<title>Animation benchmark</title>
+<!--
+  Frame benchmark (not part of the app). Runs one animation technique in an 800x200 "top row"
+  so CPU can be measured on the frame with `top`. ES5, no libraries.
+    ?t=idle            nothing animating (baseline)
+    ?t=css-snow        3 tiled SVG snow layers, CSS transform animation
+    ?t=css-clouds      3 cloud images drifting, CSS transform animation
+    ?t=canvas&n=150&fps=15   canvas 2D snowflakes, n flakes at fps
+    ?t=webgl           just reports whether WebGL is available
+-->
+<style>
+  html, body { margin: 0; background: #0b0b0c; color: #ececea; font: 20px Roboto, sans-serif; overflow: hidden; }
+  #row { position: absolute; left: 0; top: 0; width: 800px; height: 200px; overflow: hidden;
+         background: #1d2a44; }
+  #info { position: absolute; left: 16px; top: 220px; width: 760px; }
+  .layer { position: absolute; left: 0; top: -400px; width: 800px; height: 600px; background-repeat: repeat;
+           -webkit-transform: translateZ(0); transform: translateZ(0); }
+  @-webkit-keyframes fall { from { -webkit-transform: translate3d(0, 0, 0); } to { -webkit-transform: translate3d(0, 400px, 0); } }
+  @keyframes fall { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 400px, 0); } }
+  .cloud { position: absolute; width: 360px; height: 140px; -webkit-transform: translateZ(0); transform: translateZ(0); }
+  @-webkit-keyframes drift { from { -webkit-transform: translate3d(-380px, 0, 0); } to { -webkit-transform: translate3d(820px, 0, 0); } }
+  @keyframes drift { from { transform: translate3d(-380px, 0, 0); } to { transform: translate3d(820px, 0, 0); } }
+</style>
+</head>
+<body>
+<div id="row"></div>
+<div id="info"></div>
+<script>
+(function () {
+  'use strict';
+  function q(name, d) { var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search); return m ? decodeURIComponent(m[1]) : d; }
+  var t = q('t', 'idle'), row = document.getElementById('row'), info = document.getElementById('info');
+  var gl = (function () { try { var c = document.createElement('canvas'); return !!(c.getContext('webgl') || c.getContext('experimental-webgl')); } catch (e) { return false; } })();
+  info.innerHTML = 'test: <b>' + t + '</b> &middot; WebGL: ' + (gl ? 'yes' : 'no') + ' &middot; ' + navigator.userAgent.replace(/.*Chrome\/([\d.]+).*/, 'Chrome $1');
+
+  function snowTile(size, r, count, seed) {
+    var s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '">', x = seed;
+    for (var i = 0; i < count; i++) {
+      x = (x * 9301 + 49297) % 233280; var cx = x / 233280 * size;
+      x = (x * 9301 + 49297) % 233280; var cy = x / 233280 * size;
+      s += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r + '" fill="white" fill-opacity="0.85"/>';
+    }
+    return 'url("data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s + '</svg>') + '")';
+  }
+  var CLOUD = 'url("data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><g fill="#c9d2e0" fill-opacity="0.55">' +
+    '<ellipse cx="120" cy="90" rx="100" ry="40"/><ellipse cx="200" cy="70" rx="90" ry="55"/><ellipse cx="270" cy="95" rx="80" ry="35"/></g></svg>') + '")';
+
+  if (t === 'css-snow') {
+    var specs = [[200, 1.5, 40, 7, '12s'], [200, 2.5, 25, 13, '8s'], [200, 3.5, 12, 29, '5s']];
+    for (var i = 0; i < specs.length; i++) {
+      var d = document.createElement('div');
+      d.className = 'layer';
+      d.style.backgroundImage = snowTile(specs[i][0], specs[i][1], specs[i][2], specs[i][3]);
+      d.style.webkitAnimation = d.style.animation = 'fall ' + specs[i][4] + ' linear infinite';
+      row.appendChild(d);
+    }
+  } else if (t === 'css-clouds') {
+    var tops = [10, 50, 90], durs = ['70s', '95s', '120s'], delays = ['0s', '-40s', '-80s'];
+    for (var j = 0; j < 3; j++) {
+      var c = document.createElement('div');
+      c.className = 'cloud';
+      c.style.top = tops[j] + 'px';
+      c.style.backgroundImage = CLOUD;
+      c.style.webkitAnimation = c.style.animation = 'drift ' + durs[j] + ' linear ' + delays[j] + ' infinite';
+      row.appendChild(c);
+    }
+  } else if (t === 'webgl-snow') {
+    // WebGL point sprites: positions move in the vertex shader from a time uniform, so the
+    // CPU only sets one number per frame.
+    var wn = +q('n', 300), wfps = +q('fps', 15);
+    var wc = document.createElement('canvas'); wc.width = 800; wc.height = 200; row.appendChild(wc);
+    var g = wc.getContext('webgl', { alpha: true, premultipliedAlpha: false, antialias: false }) || wc.getContext('experimental-webgl');
+    var vs = 'attribute vec4 a; uniform float t; void main(){ float y = mod(a.y + t * a.z, 1.08) * 2.0 - 1.04;' +
+      ' float x = a.x * 2.0 - 1.0 + sin(t * 0.7 + a.w * 6.28) * 0.02; gl_Position = vec4(x, -y, 0.0, 1.0); gl_PointSize = 2.0 + a.w * 5.0; }';
+    var fs = 'precision mediump float; void main(){ vec2 d = gl_PointCoord - 0.5; if (dot(d, d) > 0.25) discard; gl_FragColor = vec4(1.0, 1.0, 1.0, 0.85); }';
+    function sh(type, src) { var s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); return s; }
+    var prog = g.createProgram(); g.attachShader(prog, sh(g.VERTEX_SHADER, vs)); g.attachShader(prog, sh(g.FRAGMENT_SHADER, fs));
+    g.linkProgram(prog); g.useProgram(prog);
+    var data = new Float32Array(wn * 4);
+    for (var p = 0; p < wn; p++) { data[p * 4] = Math.random(); data[p * 4 + 1] = Math.random(); data[p * 4 + 2] = 0.05 + Math.random() * 0.12; data[p * 4 + 3] = Math.random(); }
+    var buf = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, buf); g.bufferData(g.ARRAY_BUFFER, data, g.STATIC_DRAW);
+    var loc = g.getAttribLocation(prog, 'a'); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 4, g.FLOAT, false, 0, 0);
+    var tu = g.getUniformLocation(prog, 't');
+    g.clearColor(0, 0, 0, 0);
+    var wraf = window.requestAnimationFrame || window.webkitRequestAnimationFrame, wlast = 0, t0 = Date.now();
+    var wframe = function (ts) {
+      wraf(wframe);
+      if (ts - wlast < 1000 / wfps) { return; }
+      wlast = ts;
+      g.clear(g.COLOR_BUFFER_BIT);
+      g.uniform1f(tu, (Date.now() - t0) / 1000);
+      g.drawArrays(g.POINTS, 0, wn);
+    };
+    wraf(wframe);
+    info.innerHTML += ' &middot; webgl-snow n=' + wn + ' fps=' + wfps;
+  } else if (t === 'canvas') {
+    var n = +q('n', 150), fps = +q('fps', 15);
+    var cv = document.createElement('canvas'); cv.width = 800; cv.height = 200; row.appendChild(cv);
+    var ctx = cv.getContext('2d'), flakes = [], k;
+    for (k = 0; k < n; k++) { flakes.push({ x: Math.random() * 800, y: Math.random() * 200, r: 1 + Math.random() * 2.5, v: 0.5 + Math.random() * 1.5 }); }
+    var raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame, last = 0;
+    var frame = function (ts) {
+      raf(frame);
+      if (ts - last < 1000 / fps) { return; }
+      last = ts;
+      ctx.clearRect(0, 0, 800, 200);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      for (var m = 0; m < flakes.length; m++) {
+        var f = flakes[m];
+        f.y += f.v * (30 / fps); f.x += Math.sin(f.y / 30) * 0.3;
+        if (f.y > 204) { f.y = -4; f.x = Math.random() * 800; }
+        ctx.moveTo(f.x + f.r, f.y); ctx.arc(f.x, f.y, f.r, 0, 6.283);
+      }
+      ctx.fill();
+    };
+    raf(frame);
+  }
+})();
+</script>
+</body>
+</html>

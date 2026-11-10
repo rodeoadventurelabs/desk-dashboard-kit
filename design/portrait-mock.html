@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Portrait mockup: design review</title>
+<!--
+  Design-review mockup only (not the app). Proposed portrait layout for the 800x1280 frame,
+  with every type size 20% larger than the current landscape build. Static, no scripts.
+  Mock content only.
+-->
+<style>
+  html, body { margin: 0; background: #2a2a2d; font-family: Roboto, "Segoe UI", Helvetica, Arial, sans-serif; color: #ececea; }
+  .review { display: flex; padding: 24px; align-items: flex-start; }
+  .shot { margin-right: 28px; }
+  .label { font-size: 18px; color: #c9c9c4; margin: 0 0 10px 4px; }
+  .frame {
+    width: 800px; height: 1280px; background: #0b0b0c; position: relative; overflow: hidden;
+    box-sizing: border-box; padding: 16px; display: flex; flex-direction: column;
+    outline: 10px solid #000; border-radius: 4px;
+  }
+  .card { background: #18181a; border-radius: 8px; padding: 16px 18px; box-sizing: border-box; overflow: hidden; }
+  .gap { height: 16px; flex: 0 0 16px; }
+  .ttl { font-size: 17px; letter-spacing: 1px; text-transform: uppercase; color: #9a9a96; margin-bottom: 10px; }
+  .muted { color: #9a9a96; }
+  .row { display: flex; }
+
+  /* 1. Header: clock + current conditions */
+  .head { display: flex; align-items: center; flex: 0 0 auto; padding: 0 4px; }
+  .clock { font-size: 139px; font-weight: 300; line-height: 1; letter-spacing: -4px; }
+  .ampm { font-size: 36px; color: #9a9a96; margin-left: 10px; letter-spacing: 0; }
+  .date { font-size: 31px; color: #9a9a96; margin-top: 8px; }
+  .now { margin-left: auto; text-align: right; }
+  .now-top { display: flex; align-items: center; justify-content: flex-end; }
+  .temp { font-size: 77px; font-weight: 300; line-height: 1; margin-left: 12px; }
+  .temp sup { font-size: 34px; vertical-align: 30px; }
+  .cond { font-size: 24px; margin-top: 6px; }
+  .feels { font-size: 19px; color: #9a9a96; margin-top: 4px; white-space: nowrap; }
+  .alert { display: inline-block; margin-top: 8px; font-size: 18px; color: #0b0b0c; background: #f2b36b; border-radius: 14px; padding: 3px 12px; }
+
+  /* 2. Strava strip */
+  .strava { display: flex; align-items: center; flex: 0 0 auto; padding: 12px 18px; }
+  .ring { width: 112px; height: 112px; position: relative; margin-right: 20px; flex: 0 0 112px; }
+  .ring b { position: absolute; left: 0; top: 40px; width: 112px; text-align: center; font-weight: normal; font-size: 30px; }
+  .miles { font-size: 46px; line-height: 1; }
+  .miles span { font-size: 22px; color: #9a9a96; margin-left: 4px; }
+  .sub { font-size: 20px; color: #9a9a96; margin-top: 10px; }
+  .sub span { margin-right: 16px; }
+  .ytd { font-size: 19px; color: #9a9a96; margin-top: 8px; }
+  .ytd b { color: #ececea; font-weight: normal; }
+  .load { font-size: 19px; color: #9a9a96; margin-top: 6px; }
+  .load b { color: #ececea; font-weight: normal; margin-right: 10px; }
+  .sw { display: inline-block; width: 36px; height: 19px; border-radius: 10px; background: #5a3420; position: relative; vertical-align: -3px; }
+  .sw i { position: absolute; left: 19px; top: 2px; width: 15px; height: 15px; border-radius: 8px; background: #F26A2E; }
+  .bars { margin-left: auto; display: flex; align-items: flex-end; height: 110px; }
+  .bc { width: 22px; margin-left: 8px; text-align: center; }
+  .bw { height: 80px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .bar { background: #F26A2E; border-radius: 3px 3px 0 0; }
+  .bd { font-size: 16px; color: #9a9a96; margin-top: 6px; }
+
+  /* 3. Map */
+  .map { flex: 0 0 260px; position: relative; padding: 0; background: #111214 url('radar-mock.svg') center/cover; }
+  .pill { position: absolute; background: rgba(11,11,12,.85); border: 1px solid #2c2c2f; border-radius: 20px; padding: 8px 16px; font-size: 20px; }
+  .btn { position: absolute; right: 14px; width: 52px; height: 52px; border-radius: 26px; background: rgba(11,11,12,.85); border: 1px solid #2c2c2f; }
+  .stamp { position: absolute; left: 14px; bottom: 12px; font-size: 18px; color: #9a9a96; background: rgba(11,11,12,.85); padding: 4px 12px; border-radius: 14px; }
+
+  /* 4. 10-day forecast as a horizontal strip */
+  .fc { flex: 0 0 auto; display: flex; padding: 10px 8px; }
+  .fd { flex: 1; text-align: center; }
+  .fd .d { font-size: 19px; color: #9a9a96; }
+  .fd .i { height: 34px; margin: 2px 0 0; }
+  .fd .h { font-size: 23px; }
+  .fd .l { font-size: 19px; color: #9a9a96; margin-top: 2px; }
+
+  /* 5. Lower: events (left) | commute + tasks (right) */
+  .lower { flex: 1; display: flex; min-height: 0; }
+  .events { flex: 1; margin-right: 16px; }
+  .right { width: 360px; display: flex; flex-direction: column; }
+  .ev { display: flex; margin-bottom: 13px; }
+  .evb { width: 6px; border-radius: 3px; margin-right: 14px; flex: 0 0 6px; }
+  .evt { font-size: 19px; color: #9a9a96; }
+  .evn { font-size: 25px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 330px; }
+  .dim { opacity: .5; }
+  .chip { display: inline-block; font-size: 18px; padding: 4px 12px; border-radius: 14px; border: 1px solid #2c2c2f; color: #9a9a96; margin-bottom: 10px; }
+  .dayhead { font-size: 17px; letter-spacing: 1px; text-transform: uppercase; color: #9a9a96; margin: 12px 0 10px; padding-top: 10px; border-top: 1px solid #232326; }
+  .commute { flex: 0 0 auto; }
+  .ch { display: flex; justify-content: space-between; align-items: baseline; }
+  .hb { font-size: 22px; }
+  .rt { display: flex; align-items: center; font-size: 22px; padding: 6px 0; border-top: 1px solid #232326; }
+  .rt .n { width: 132px; } .rt .b { width: 104px; } .rt .s { flex: 1; text-align: right; font-size: 20px; color: #8fd8a8; }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 6px; background: #8fd8a8; margin-right: 10px; vertical-align: 1px; }
+  .nudge { font-size: 19px; color: #8fd8a8; margin-top: 8px; padding-top: 9px; border-top: 1px solid #232326; }
+  .tasks { flex: 1; margin-top: 16px; }
+  .tk { display: flex; align-items: center; font-size: 23px; margin-bottom: 11px; white-space: nowrap; }
+  .tk i { width: 19px; height: 19px; border: 2px solid #9a9a96; border-radius: 4px; margin-right: 14px; flex: 0 0 19px; }
+  .tk.done { color: #6c6c69; text-decoration: line-through; }
+  .tk.done i { background: #6c6c69; border-color: #6c6c69; }
+
+  /* Split takeover, stacked top/bottom in portrait */
+  .to { flex: 1; display: flex; flex-direction: column; background: #18181a; border-radius: 8px; overflow: hidden; }
+  .band { height: 72px; flex: 0 0 72px; display: flex; align-items: center; padding: 0 30px; font-size: 26px; color: #0b0b0c; }
+  .tob { flex: 1; padding: 26px 40px 0; }
+  .tol { font-size: 34px; color: #9a9a96; }
+  .toc { font-size: 150px; font-weight: 300; line-height: 1.05; letter-spacing: -3px; }
+  .tot { font-size: 46px; margin-top: 10px; }
+  .tom { font-size: 29px; margin-top: 10px; }
+  .tom2 { font-size: 26px; color: #9a9a96; margin-top: 6px; }
+  .toa { padding: 0 40px 30px; display: flex; }
+  .tbtn { font-size: 29px; height: 82px; padding: 0 38px; border-radius: 8px; border: 2px solid #3a3a3d; background: transparent; color: #ececea; margin-right: 18px; font-family: inherit; }
+
+  .notes { max-width: 520px; font-size: 16px; line-height: 1.5; color: #c9c9c4; }
+  .notes h2 { font-size: 20px; color: #ececea; margin: 0 0 8px; }
+  .notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="review">
+
+  <!-- A. Main dashboard -->
+  <div class="shot">
+    <div class="label">A. Dashboard, portrait 800×1280 (type +20%)</div>
+    <div class="frame">
+      <div class="head">
+        <div>
+          <div class="clock">1:52<span class="ampm">PM</span></div>
+          <div class="date">Tuesday, November 10</div>
+        </div>
+        <div class="now">
+          <div class="now-top">
+            <svg width="70" height="70" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4" fill="#f2b36b"/><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(2 1.5) scale(0.92)"/></svg>
+            <div class="temp">68<sup>°</sup></div>
+          </div>
+          <div class="cond">Partly cloudy</div>
+          <div class="feels">Feels 61° · Wind 6 mph</div>
+          <div class="alert">Wind Advisory</div>
+        </div>
+      </div>
+      <div class="gap"></div>
+
+      <div class="card strava">
+        <div class="ring">
+          <svg width="112" height="112" viewBox="0 0 112 112"><circle cx="56" cy="56" r="47" fill="none" stroke="#2c2c2f" stroke-width="10"/><circle cx="56" cy="56" r="47" fill="none" stroke="#F26A2E" stroke-width="10" stroke-linecap="round" stroke-dasharray="86 295" transform="rotate(-90 56 56)"/></svg>
+          <b>29%</b>
+        </div>
+        <div>
+          <div class="miles">43.4<span>/ 150 mi</span></div>
+          <div class="sub"><span>2h 31m</span><span>1,250 ft</span></div>
+          <div class="ytd">2026: <b>9,944 mi</b> · via Strava</div>
+          <div class="load">CTL <b>93</b>ATL <b>59</b>TSB <b style="color:#5b8def">+34</b><span class="sw"><i></i></span></div>
+        </div>
+        <div class="bars">
+          <div class="bc"><div class="bw"><div class="bar" style="height:58px"></div></div><div class="bd">M</div></div>
+          <div class="bc"><div class="bw"><div class="bar" style="height:80px"></div></div><div class="bd" style="color:#ececea">T</div></div>
+          <div class="bc"><div class="bw"></div><div class="bd">W</div></div>
+          <div class="bc"><div class="bw"></div><div class="bd">T</div></div>
+          <div class="bc"><div class="bw"></div><div class="bd">F</div></div>
+          <div class="bc"><div class="bw"></div><div class="bd">S</div></div>
+          <div class="bc"><div class="bw"></div><div class="bd">S</div></div>
+        </div>
+      </div>
+      <div class="gap"></div>
+
+      <div class="card map">
+        <div class="pill" style="left:14px;top:14px"><span class="dot" style="background:#f2b36b"></span>AQI 52</div>
+        <div class="pill" style="right:14px;top:14px">↙ 6 mph NE</div>
+        <div class="btn" style="top:72px"></div>
+        <div class="btn" style="top:134px"></div>
+        <div class="stamp">Radar · 1:50</div>
+      </div>
+      <div class="gap"></div>
+
+      <div class="card fc">
+        <div class="fd"><div class="d" style="color:#ececea">Today</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -2)"/></svg></div><div class="h">70°</div><div class="l">36°</div></div>
+        <div class="fd"><div class="d">Wed</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -2)"/></svg></div><div class="h">64°</div><div class="l">36°</div></div>
+        <div class="fd"><div class="d">Thu</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4" fill="#f2b36b"/><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(2 1.5) scale(0.92)"/></svg></div><div class="h">67°</div><div class="l">40°</div></div>
+        <div class="fd"><div class="d">Fri</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -2)"/></svg></div><div class="h">63°</div><div class="l">50°</div></div>
+        <div class="fd"><div class="d">Sat</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -2)"/></svg></div><div class="h">53°</div><div class="l">45°</div></div>
+        <div class="fd"><div class="d">Sun</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -4)"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#5b8def" stroke-width="2" stroke-linecap="round"/></svg></div><div class="h">46°</div><div class="l">40°</div></div>
+        <div class="fd"><div class="d">Mon</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -2)"/></svg></div><div class="h">52°</div><div class="l">39°</div></div>
+        <div class="fd"><div class="d">Tue</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -2)"/></svg></div><div class="h">54°</div><div class="l">44°</div></div>
+        <div class="fd"><div class="d">Wed</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -4)"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#5b8def" stroke-width="2" stroke-linecap="round"/></svg></div><div class="h">52°</div><div class="l">43°</div></div>
+        <div class="fd"><div class="d">Thu</div><div class="i"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 10.1 4.5 4.5 0 0 0 7 19z" fill="#9a9a96" transform="translate(0 -4)"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#5b8def" stroke-width="2" stroke-linecap="round"/></svg></div><div class="h">43°</div><div class="l">36°</div></div>
+      </div>
+      <div class="gap"></div>
+
+      <div class="lower">
+        <div class="card events">
+          <div class="ttl">Today</div>
+          <div class="muted" style="font-size:18px;margin-bottom:12px">3 earlier</div>
+          <div class="ev dim"><div class="evb" style="background:#5b8def"></div><div><div class="evt">4:00 – 5:00 PM</div><div class="evn">Piano lesson</div></div></div>
+          <div class="ev"><div class="evb" style="background:#F26A2E"></div><div><div class="evt">5:30 – 5:45 PM</div><div class="evn">Call with Dana</div></div></div>
+          <div class="dayhead">Tomorrow · Wed</div>
+          <div class="chip">Veterans Day</div>
+          <div class="ev"><div class="evb" style="background:#F26A2E"></div><div><div class="evt">10:30 – 10:45 AM</div><div class="evn">Weekly 1:1</div></div></div>
+          <div class="ev"><div class="evb" style="background:#F26A2E"></div><div><div class="evt">6:00 – 8:00 PM</div><div class="evn">Board meeting</div></div></div>
+        </div>
+        <div class="right">
+          <div class="card commute">
+            <div class="ch"><div class="ttl" style="margin:0">Commute</div><div class="hb">Home by 6:30 PM</div></div>
+            <div style="height:8px"></div>
+            <div class="rt"><div class="n"><span class="dot"></span>Quick</div><div class="b">by 5:40</div><div class="s">227m</div></div>
+            <div class="rt"><div class="n"><span class="dot"></span>Middle</div><div class="b">by 5:30</div><div class="s">217m</div></div>
+            <div class="rt"><div class="n"><span class="dot"></span>Long way</div><div class="b">by 5:10</div><div class="s">197m</div></div>
+            <div class="nudge">Long way still on. Pack up by 5:10.</div>
+          </div>
+          <div class="card tasks">
+            <div class="ttl">Tasks</div>
+            <div class="tk"><i></i>Caliper from David</div>
+            <div class="tk"><i></i>Post ready to roll</div>
+            <div class="tk"><i></i>Post demo bikes</div>
+            <div class="tk"><i></i>TD4 / UDH axle product</div>
+            <div class="tk"><i></i>Fix Woo deposit system</div>
+            <div class="tk done"><i></i>Order chain lube</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. Split takeover, stacked -->
+  <div class="shot">
+    <div class="label">B. Two alerts at once: stacked top / bottom</div>
+    <div class="frame">
+      <div class="to">
+        <div class="band" style="background:#F26A2E">Commute · Quick route</div>
+        <div class="tob">
+          <div class="tol">Last call</div>
+          <div class="toc" style="color:#F26A2E">Go now</div>
+          <div class="tot">Pack up and ride</div>
+          <div class="tom">Home by 6:15 PM</div>
+          <div class="tom2">40 min ride + 10 min pack-up · ETA 6:15</div>
+        </div>
+        <div class="toa"><button class="tbtn" style="background:#F26A2E;border-color:#F26A2E;color:#0b0b0c">Got it</button><button class="tbtn">Snooze 10 min</button></div>
+      </div>
+      <div class="gap"></div>
+      <div class="to">
+        <div class="band" style="background:#5b8def">Work · Call</div>
+        <div class="tob">
+          <div class="tol">Starts in</div>
+          <div class="toc" style="color:#5b8def">5 min</div>
+          <div class="tot">Call with Dana</div>
+          <div class="tom">5:30 – 5:45 PM</div>
+          <div class="tom2">Phone</div>
+        </div>
+        <div class="toa"><button class="tbtn" style="background:#5b8def;border-color:#5b8def;color:#0b0b0c">Got it</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h2>What changes</h2>
+    <ul>
+      <li><b>Top:</b> big clock and date, with current conditions beside it (temperature, feels-like and wind on one short line, alert pill).</li>
+      <li><b>Strava strip:</b> full width, so the ring, the numbers and the daily bars all get room.</li>
+      <li><b>Map:</b> full width, 768×260 (shorter but wider than now). Expand still goes full screen (800×1280 in portrait).</li>
+      <li><b>10-day forecast:</b> a horizontal strip of 10 columns instead of 10 rows, which saves most of a card.</li>
+      <li><b>Bottom:</b> Today and Tomorrow on the left (scrolls); Commute and Tasks on the right (Tasks scrolls).</li>
+      <li><b>Type:</b> every size ×1.2 (event titles 21→25 px, tasks 19→23, clock 116→139, card titles 14→17).</li>
+      <li><b>Alerts:</b> two at once stack top/bottom instead of left/right. A single alert fills the screen. Night mode is unchanged (centered clock).</li>
+      <li><b>Wind animation:</b> 20 → 10 frames per second.</li>
+      <li><b>Kiosk app:</b> currently locked to landscape. It gets rebuilt for portrait and reinstalled. The frame needs to stand in portrait on its stand.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

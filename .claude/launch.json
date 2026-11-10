@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["tools/serve_nocache.py", "8787", "site"],
+      "port": 8787
+    },
+    {
+      "name": "design-mock",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8788", "--bind", "127.0.0.1", "--directory", "design"],
+      "port": 8788
+    }
+  ]
+}

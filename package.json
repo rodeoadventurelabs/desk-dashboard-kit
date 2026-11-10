@@ -1,0 +1,13 @@
+{
+  "name": "rodeo-desk-dashboard",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Always-on desk dashboard for a hacked photo frame (Netlify static page + Functions)",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.7"
+  }
+}

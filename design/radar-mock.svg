@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 600" width="520" height="600" preserveAspectRatio="xMidYMid slice">
+  <!-- Mock radar: the scheduled function will composite a real one (section 2). -->
+  <rect width="520" height="600" fill="#111214"/>
+
+  <!-- street grid -->
+  <g stroke="#1b1c1f" stroke-width="1">
+    <path d="M0 40H520M0 90H520M0 140H520M0 190H520M0 240H520M0 290H520M0 340H520M0 390H520M0 440H520M0 490H520M0 540H520M0 590H520"/>
+    <path d="M30 0V600M80 0V600M130 0V600M180 0V600M230 0V600M280 0V600M330 0V600M380 0V600M430 0V600M480 0V600"/>
+  </g>
+
+  <!-- river and highways -->
+  <path d="M-10 120 C 80 160, 140 230, 210 300 S 330 420, 530 470" fill="none" stroke="#18273a" stroke-width="6"/>
+  <g fill="none" stroke="#2a2c30" stroke-width="4">
+    <path d="M250 -10 C 245 120, 270 260, 262 610"/>
+    <path d="M-10 365 C 160 355, 360 372, 530 360"/>
+    <path d="M60 610 L 470 -10"/>
+  </g>
+
+  <!-- precipitation -->
+  <g opacity="0.55" fill="#3f8f5a">
+    <ellipse cx="400" cy="150" rx="150" ry="85" transform="rotate(-25 400 150)"/>
+    <ellipse cx="300" cy="80" rx="80" ry="40" transform="rotate(-10 300 80)"/>
+    <ellipse cx="470" cy="300" rx="60" ry="90"/>
+    <ellipse cx="90" cy="520" rx="70" ry="35" transform="rotate(20 90 520)"/>
+  </g>
+  <g opacity="0.6" fill="#c9a93a">
+    <ellipse cx="415" cy="140" rx="75" ry="40" transform="rotate(-25 415 140)"/>
+    <ellipse cx="470" cy="290" rx="28" ry="45"/>
+  </g>
+  <g opacity="0.7" fill="#c8643a">
+    <ellipse cx="430" cy="132" rx="28" ry="16" transform="rotate(-25 430 132)"/>
+  </g>
+
+  <!-- commute line -->
+  <path d="M150 220 C 200 300, 260 330, 340 420" fill="none" stroke="#ececea" stroke-opacity="0.75" stroke-width="3" stroke-dasharray="9 7" stroke-linecap="round"/>
+
+  <!-- markers -->
+  <circle cx="150" cy="220" r="10" fill="#F26A2E" stroke="#0b0b0c" stroke-width="3"/>
+  <text x="168" y="214" font-family="Roboto, Segoe UI, Arial, sans-serif" font-size="18" fill="#ececea">Shop</text>
+  <circle cx="340" cy="420" r="10" fill="#5b8def" stroke="#0b0b0c" stroke-width="3"/>
+  <text x="358" y="426" font-family="Roboto, Segoe UI, Arial, sans-serif" font-size="18" fill="#ececea">Home</text>
+
+  <!-- wind arrows: from the NW, blowing toward the SE -->
+  <g stroke="#9a9a96" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(90 330) rotate(135)"><path d="M0 14V-14M-6 -8L0 -14 6 -8"/></g>
+    <g transform="translate(230 480) rotate(135)"><path d="M0 14V-14M-6 -8L0 -14 6 -8"/></g>
+    <g transform="translate(400 520) rotate(135)"><path d="M0 14V-14M-6 -8L0 -14 6 -8"/></g>
+    <g transform="translate(330 230) rotate(135)"><path d="M0 14V-14M-6 -8L0 -14 6 -8"/></g>
+    <g transform="translate(110 110) rotate(135)"><path d="M0 14V-14M-6 -8L0 -14 6 -8"/></g>
+  </g>
+</svg>

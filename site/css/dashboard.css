@@ -1,0 +1,638 @@
+/*
+ * Desk Dashboard: 800x1280 portrait, dark. Type sizes are 1.2x the original landscape build.
+ * Written for an old Android WebView (the frame runs WebView 44): flexbox only (no grid,
+ * no flex gap), no CSS variables, -webkit- prefixes on transforms and keyframes.
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0b0c;
+  color: #ececea;
+  font-family: Roboto, "Segoe UI", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+#stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 1280px;
+  overflow: hidden;
+  background: #0b0b0c;
+  -webkit-transform-origin: 0 0;
+  transform-origin: 0 0;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- Rows ---------- */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  width: 800px;
+  height: 1280px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.with-bar .rows { padding-top: 66px; }
+.rows > * { margin-bottom: 16px; flex: 0 0 auto; }
+.rows > *:last-child { margin-bottom: 0; }
+
+.card {
+  background: #18181a;
+  border-radius: 8px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.card-title {
+  font-size: 17px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9a9a96;
+  margin-bottom: 12px;
+}
+
+.muted { color: #9a9a96; }
+
+/* ---------- 1. Header: clock + current conditions ---------- */
+
+.head { display: flex; align-items: center; padding: 0 4px; }
+.clock-block { flex: 1; min-width: 0; }
+.clock {
+  font-size: 139px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -4px;
+  white-space: nowrap;
+}
+.ampm {
+  font-size: 36px;
+  letter-spacing: 0;
+  color: #9a9a96;
+  margin-left: 10px;
+}
+.date {
+  font-size: 31px;
+  color: #9a9a96;
+  margin-top: 8px;
+  white-space: nowrap;
+}
+
+/* Living sky: the header is a card with a painted sky (static canvas), clock decorations
+   (icicles, snow caps), and one motion canvas on top for weather (sky.js). */
+.head.sky {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  padding: 4px 18px;
+  min-height: 186px;
+  box-sizing: border-box;
+  background: #141a2a;
+  z-index: 0;                 /* own stacking context, so the sky can sit at z-index -1 */
+}
+/* Layer order without giving the clock its own layer: on the frame's WebView 44 a positioned,
+   z-indexed clock block cut a rectangle out of the motion canvas above it. */
+.sky-static, .sky-motion, .sky-deco { position: absolute; left: 0; top: 0; pointer-events: none; }
+.sky-static { z-index: -1; }  /* behind the in-flow clock and conditions */
+.sky-deco { z-index: 1; right: 0; bottom: 0; }
+.sky-motion { z-index: 2; }   /* snow and leaves pass in front of the clock */
+/* Hard (unblurred) shadows only: on the frame's WebView 44 a blurred text-shadow on the big
+   clock painted a dark rectangle over the whole clock box. */
+.sky .clock, .sky .now { text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
+.sky .date, .sky .ampm, .sky .now-feels { color: rgba(236, 236, 234, 0.82); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
+.sky .now-src { color: rgba(236, 236, 234, 0.55); }
+.snowcap {
+  position: absolute;
+  height: 11px;
+  background: #f4f8ff;
+  border-radius: 7px 9px 3px 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.icicles { position: absolute; overflow: visible; }
+
+.now { flex: 0 0 auto; text-align: right; max-width: 330px; }
+.now-top { display: flex; align-items: center; justify-content: flex-end; }
+.now-icon { margin-right: 12px; }
+.now-temp { font-size: 77px; font-weight: 300; line-height: 1; }
+.now-temp sup { font-size: 34px; vertical-align: 30px; }
+.now-cond { font-size: 24px; margin-top: 6px; white-space: nowrap; }
+.now-feels { font-size: 19px; color: #9a9a96; margin-top: 4px; white-space: nowrap; }
+.now-src { font-size: 17px; color: #6c6c69; }
+.alert-pill {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 18px;
+  color: #0b0b0c;
+  background: #f2b36b;
+  border-radius: 14px;
+  padding: 3px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.alert-pill.severe { background: #f28b82; }
+
+/* ---------- 2. Strava strip ---------- */
+
+.strava {
+  display: flex;
+  align-items: center;
+  padding: 12px 18px;
+}
+.ring { position: relative; width: 112px; height: 112px; flex: 0 0 112px; margin-right: 20px; }
+.ring svg { position: absolute; left: 0; top: 0; }
+.ring-pct {
+  position: absolute;
+  left: 0;
+  top: 40px;
+  width: 112px;
+  text-align: center;
+  font-size: 30px;
+}
+.strava-stats { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; }
+.miles { font-size: 46px; line-height: 1; }
+.miles .of { font-size: 22px; color: #9a9a96; margin-left: 4px; }
+.strava-sub { font-size: 20px; color: #9a9a96; margin-top: 10px; }
+.strava-sub span { margin-right: 16px; }
+.strava-ytd { font-size: 19px; color: #9a9a96; margin-top: 8px; }
+.strava-ytd b { color: #ececea; font-weight: normal; }
+.strava-src { font-size: 16px; color: #6c6c69; }
+
+/* Training load line; the whole line is the tap target for the switch. */
+.strava-load {
+  font-size: 19px;
+  color: #9a9a96;
+  margin-top: 4px;
+  padding: 3px 0;
+}
+.strava-load b { color: #ececea; font-weight: normal; margin-right: 10px; }
+.strava-load b.green { color: #8fd8a8; }
+.strava-load b.red   { color: #f28b82; }
+.strava-load b.blue  { color: #5b8def; }
+.strava-load b.muted { color: #9a9a96; }
+.strava-load.off { color: #6c6c69; }
+.switch {
+  display: inline-block;
+  position: relative;
+  width: 36px;
+  height: 19px;
+  border-radius: 10px;
+  background: #2c2c2f;
+  vertical-align: -3px;
+  margin-left: 2px;
+}
+.switch .knob {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 8px;
+  background: #6c6c69;
+}
+.switch.on { background: #5a3420; }
+.switch.on .knob { left: 19px; background: #F26A2E; }
+
+.bars { display: flex; align-items: flex-end; height: 110px; flex: 0 0 auto; margin-left: 12px; }
+.bar-col { width: 22px; margin-left: 8px; text-align: center; }
+.bar-wrap { height: 80px; display: flex; flex-direction: column; justify-content: flex-end; }
+.bar { background: #F26A2E; border-radius: 3px 3px 0 0; width: 22px; }
+.bar.zero { background: #2c2c2f; height: 3px; border-radius: 2px; }
+.bar.future { background: transparent; }
+.bar-day { font-size: 16px; color: #9a9a96; margin-top: 6px; }
+.bar-col.today .bar-day { color: #ececea; }
+
+/* ---------- 3. Radar map ---------- */
+
+.radar {
+  height: 260px;
+  position: relative;
+  padding: 0;
+}
+/* Expanded: the map covers the whole screen (other cards stay underneath). */
+.radar.map-full {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 1280px;
+  z-index: 5;
+  margin: 0;
+  border-radius: 0;
+}
+
+.map {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  z-index: 0;                 /* keeps Leaflet's panes under the pills */
+}
+.leaflet-container { background: #111214; font-family: inherit; }
+/* Turn light OSM tiles into a dim, low-color dark map. */
+.dark-tiles {
+  -webkit-filter: invert(1) hue-rotate(180deg) brightness(0.7) contrast(1.1) saturate(0.35);
+  filter: invert(1) hue-rotate(180deg) brightness(0.7) contrast(1.1) saturate(0.35);
+}
+.leaflet-control-attribution.leaflet-control {
+  background: rgba(11, 11, 12, 0.75);
+  color: #6c6c69;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.leaflet-control-attribution a { color: #9a9a96; }
+.wind-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 420;               /* above the tile layers, below markers (600) */
+  pointer-events: none;
+}
+
+.map-marker .mk-dot {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9px;
+  border: 3px solid #0b0b0c;
+}
+.map-marker.work .mk-dot { background: #F26A2E; }
+.map-marker.home .mk-dot { background: #5b8def; }
+.map-marker .mk-label {
+  position: absolute;
+  left: 20px;
+  top: -7px;
+  font-size: 20px;
+  color: #ececea;
+  white-space: nowrap;
+  text-shadow: 0 0 3px #0b0b0c, 0 0 3px #0b0b0c;
+}
+
+.map-btns {
+  position: absolute;
+  right: 14px;
+  top: 66px;
+  z-index: 1;
+}
+.map-btn {
+  -webkit-appearance: none;
+  display: block;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 10px;
+  border-radius: 26px;
+  border: 1px solid #2c2c2f;
+  background: rgba(11, 11, 12, 0.85);
+  color: #ececea;
+  padding: 0;
+  outline: none;
+}
+.map-btn svg { vertical-align: middle; }
+
+.pill {
+  z-index: 1;
+  position: absolute;
+  background: rgba(11, 11, 12, 0.85);
+  border: 1px solid #2c2c2f;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 20px;
+  white-space: nowrap;
+}
+.pill-tl { left: 14px; top: 14px; }
+.pill-tr { right: 14px; top: 14px; }
+.pill svg { vertical-align: -3px; margin-right: 4px; }
+.dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  margin-right: 10px;
+  vertical-align: 1px;
+}
+.radar-stamp {
+  z-index: 1;
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  font-size: 18px;
+  color: #9a9a96;
+  background: rgba(11, 11, 12, 0.85);
+  padding: 4px 12px;
+  border-radius: 14px;
+}
+
+/* ---------- 4. 10-day forecast strip ---------- */
+
+.forecast { padding: 10px 8px; }
+.fc { display: flex; }
+.fd { flex: 1; text-align: center; min-width: 0; }
+.fd-day { font-size: 19px; color: #9a9a96; }
+.fd.today .fd-day { color: #ececea; }
+.fd-icon { height: 34px; margin-top: 2px; }
+.fd-icon svg { vertical-align: middle; }
+.fd-hi { font-size: 23px; }
+.fd-lo { font-size: 19px; color: #9a9a96; margin-top: 2px; }
+
+/* ---------- 5. Lower: events | commute + tasks ---------- */
+
+.lower { flex: 1 1 auto; min-height: 0; display: flex; }
+.lower-right { width: 360px; display: flex; flex-direction: column; min-height: 0; }
+
+/* Events and tasks: the card title stays put, the list under it scrolls. */
+.card-events { flex: 1; min-width: 0; margin-right: 16px; display: flex; flex-direction: column; }
+.card-tasks  { flex: 1; min-height: 150px; margin-top: 16px; display: flex; flex-direction: column; }
+#events, #tasks {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-right: -8px;          /* room for the scrollbar without squeezing the text */
+  padding-right: 8px;
+}
+#events::-webkit-scrollbar, #tasks::-webkit-scrollbar { width: 4px; }
+#events::-webkit-scrollbar-thumb, #tasks::-webkit-scrollbar-thumb { background: #3a3a3d; border-radius: 2px; }
+#events::-webkit-scrollbar-track, #tasks::-webkit-scrollbar-track { background: transparent; }
+
+.day-head {
+  font-size: 17px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9a9a96;
+  margin: 14px 0 10px;
+  padding-top: 10px;
+  border-top: 1px solid #232326;
+}
+
+a.ev-link { color: inherit; text-decoration: none; border-radius: 4px; }
+a.ev-link:hover { background: #222225; }
+a.ev-link:hover .ev-title { text-decoration: underline; }
+
+.allday { margin-bottom: 10px; }
+.chip {
+  display: inline-block;
+  font-size: 18px;
+  padding: 4px 12px;
+  border-radius: 14px;
+  border: 1px solid #2c2c2f;
+  color: #9a9a96;
+  margin: 0 6px 6px 0;
+}
+
+.ev {
+  display: flex;
+  margin-bottom: 13px;
+}
+.ev-bar {
+  width: 6px;
+  border-radius: 3px;
+  margin-right: 14px;
+  flex: 0 0 6px;
+}
+.ev-body { min-width: 0; flex: 1; }
+.ev-time { font-size: 19px; color: #9a9a96; }
+.ev-title {
+  font-size: 25px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev.family { opacity: 0.5; }
+.earlier { font-size: 18px; color: #6c6c69; margin-bottom: 12px; }
+.ev.current .ev-time { color: #F26A2E; }
+.ev-tag {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-left: 6px;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  font-size: 23px;
+  margin-bottom: 11px;
+}
+.task-box {
+  width: 19px;
+  height: 19px;
+  border: 2px solid #9a9a96;
+  border-radius: 4px;
+  margin-right: 14px;
+  flex: 0 0 19px;
+  position: relative;
+}
+.task-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task.done { color: #6c6c69; }
+.task.done .task-text { text-decoration: line-through; }
+.task.done .task-box { border-color: #6c6c69; background: #6c6c69; }
+
+/* Commute (top of the right column) */
+.commute { flex: 0 0 auto; }
+.commute-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.commute-head .card-title { margin-bottom: 0; }
+.homeby { font-size: 22px; text-align: right; }
+.homeby-why {
+  font-size: 16px; color: #9a9a96; display: block; text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;
+}
+.commute-head > div:last-child { min-width: 0; }
+
+.route {
+  display: flex;
+  align-items: center;
+  font-size: 22px;
+  padding: 6px 0;
+  border-top: 1px solid #232326;
+}
+.route-name { width: 132px; white-space: nowrap; }
+.route-leave { width: 104px; white-space: nowrap; }
+.route-slack { flex: 1; text-align: right; font-size: 20px; white-space: nowrap; }
+.nudge {
+  font-size: 19px;
+  margin-top: 8px;
+  padding-top: 9px;
+  border-top: 1px solid #232326;
+}
+.commute-off { font-size: 22px; color: #9a9a96; }
+
+.green { color: #8fd8a8; }
+.amber { color: #f2b36b; }
+.red   { color: #f28b82; }
+.bg-green { background: #8fd8a8; }
+.bg-amber { background: #f2b36b; }
+.bg-red   { background: #f28b82; }
+
+/* ---------- Slim countdown bar ---------- */
+
+.topbar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 10px;
+  height: 42px;
+  line-height: 42px;
+  background: #18181a;
+  border-radius: 8px;
+  font-size: 22px;
+  padding: 0 16px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.topbar .dot { background: #F26A2E; }
+.topbar .muted { margin-left: 10px; }
+
+/* ---------- Overlays: takeovers, night mode ---------- */
+
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 1280px;
+  background: #0b0b0c;
+  display: flex;
+  flex-direction: column;     /* two takeovers stack top/bottom in portrait */
+  z-index: 10;
+}
+
+.to {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #18181a;
+  margin: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+.split .to:first-child { margin-bottom: 8px; }
+.split .to:last-child  { margin-top: 8px; }
+
+.to-band {
+  display: flex;
+  align-items: center;
+  height: 76px;
+  padding: 0 30px;
+  font-size: 29px;
+  color: #0b0b0c;
+  flex: 0 0 76px;
+}
+.to-band svg { margin-right: 14px; }
+.to-band .more { margin-left: auto; font-size: 22px; }
+.orange .to-band { background: #F26A2E; }
+.blue   .to-band { background: #5b8def; }
+.orange .to-count { color: #F26A2E; }
+.blue   .to-count { color: #5b8def; }
+
+.to-body { flex: 1; padding: 40px 44px 0; min-height: 0; }
+.to-label { font-size: 36px; color: #9a9a96; }
+.to-count { font-size: 190px; font-weight: 300; line-height: 1.05; letter-spacing: -5px; white-space: nowrap; }
+.to-title {
+  font-size: 55px;
+  line-height: 1.15;
+  margin-top: 20px;
+  overflow: hidden;
+  max-height: 128px;          /* up to two lines in portrait */
+}
+.to-meta  { font-size: 34px; color: #ececea; margin-top: 14px; }
+.to-meta2 { font-size: 31px; color: #9a9a96; margin-top: 8px; }
+
+.split .to-body  { padding: 24px 40px 0; }
+.split .to-label { font-size: 32px; }
+.split .to-count { font-size: 140px; letter-spacing: -3px; }
+.split .to-title { font-size: 44px; max-height: 51px; white-space: nowrap; text-overflow: ellipsis; margin-top: 8px; }
+.split .to-meta  { font-size: 29px; margin-top: 8px; }
+.split .to-meta2 { font-size: 26px; margin-top: 4px; }
+
+.to-actions { padding: 0 44px 44px; display: flex; }
+.split .to-actions { padding: 0 40px 28px; }
+
+.btn {
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: 31px;
+  height: 90px;
+  padding: 0 42px;
+  border-radius: 8px;
+  border: 2px solid #3a3a3d;
+  background: transparent;
+  color: #ececea;
+  margin-right: 18px;
+  outline: none;
+}
+.btn.primary { color: #0b0b0c; }
+.orange .btn.primary { background: #F26A2E; border-color: #F26A2E; }
+.blue   .btn.primary { background: #5b8def; border-color: #5b8def; }
+.split .btn { font-size: 29px; height: 82px; padding: 0 36px; }
+
+/* 5-minute pulse: slow breathing, one cycle every 2 s. Never a flash.
+   A tinted layer fades in and out (opacity runs on the GPU). Animating background-color
+   instead cost 35-55% CPU on the frame's A33. */
+.to { position: relative; }
+.to > * { position: relative; z-index: 1; }
+.to.pulse:before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  z-index: 0;
+  opacity: 0;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* Measured on the frame: ~30% CPU while pulsing (stepping it to 12 updates/s didn't help),
+     only for the last 5 minutes before an event. */
+  -webkit-animation: breathe 2s ease-in-out infinite;
+  animation: breathe 2s ease-in-out infinite;
+}
+.orange.pulse:before { background: #3a2418; }
+.blue.pulse:before   { background: #1a2540; }
+@-webkit-keyframes breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes         breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+/* Night mode prompt */
+.np {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0 40px;
+}
+.np-title { font-size: 50px; line-height: 1.25; }
+.np-count { color: #5b8def; }
+.np-sub { font-size: 29px; color: #9a9a96; margin-top: 18px; line-height: 1.35; }
+.np-actions { margin-top: 56px; display: flex; flex-direction: column; align-items: stretch; width: 460px; }
+.np .btn { margin: 0 0 18px; }
+.np .btn.primary { background: #5b8def; border-color: #5b8def; }
+
+/* Night mode: dim clock only, no private data */
+.overlay.night-bg { background: #000; }
+.night {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.night-clock { font-size: 240px; font-weight: 300; color: #3a3a38; letter-spacing: -7px; line-height: 1; }
+.night-date  { font-size: 36px; color: #2a2a28; margin-top: 22px; }

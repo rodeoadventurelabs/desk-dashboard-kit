@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=800, initial-scale=1">
+<title>Sky lab</title>
+<!--
+  Design lab for the living-sky header (not linked from the dashboard). Try every scene at the
+  real 800px width. Presets: ?preset=clear-day|sunset|night|cloudy|rain|snow|windy|storm|frigid|blizzard
+  Manual: ?hour=15.5&cloud=40&precip=snow&wind=14&gust=22&temp=18&thunder=1
+-->
+<link rel="stylesheet" href="../css/dashboard.css">
+<style>
+  html, body { overflow: auto; }
+  .lab { width: 800px; padding: 16px; box-sizing: border-box; }
+  .ctl { margin-top: 18px; font-size: 18px; color: #c9c9c4; }
+  .ctl button { font: inherit; font-size: 17px; margin: 0 6px 8px 0; padding: 8px 14px; border-radius: 8px;
+    border: 1px solid #3a3a3d; background: #18181a; color: #ececea; }
+  .ctl button.on { background: #F26A2E; border-color: #F26A2E; color: #0b0b0c; }
+  .ctl label { display: inline-block; margin: 8px 18px 0 0; }
+  .ctl input[type=range] { width: 260px; vertical-align: middle; }
+  .readout { font-size: 15px; color: #9a9a96; margin-top: 10px; }
+  .below { margin-top: 16px; height: 120px; }
+</style>
+</head>
+<body>
+<div class="lab">
+  <div class="head sky" id="head">
+    <div class="clock-block">
+      <div class="clock"><span id="clock"></span><span id="ampm" class="ampm"></span></div>
+      <div id="date" class="date">Tuesday, November 10</div>
+    </div>
+    <div id="now" class="now"></div>
+  </div>
+  <div class="card below muted" style="padding-top:44px;text-align:center">(Strava strip sits here)</div>
+
+  <div class="ctl">
+    <div id="presets"></div>
+    <label>Time <input id="hour" type="range" min="0" max="24" step="0.25"> <span id="hourv"></span></label>
+    <label>Cloud <input id="cloud" type="range" min="0" max="100" step="5"> <span id="cloudv"></span></label><br>
+    <label>Wind <input id="wind" type="range" min="0" max="40" step="1"> <span id="windv"></span></label>
+    <label>Temp <input id="temp" type="range" min="-10" max="95" step="1"> <span id="tempv"></span></label><br>
+    <label><input id="p-none" type="radio" name="p" value=""> Dry</label>
+    <label><input id="p-rain" type="radio" name="p" value="rain"> Rain</label>
+    <label><input id="p-snow" type="radio" name="p" value="snow"> Snow</label>
+    <label><input id="thunder" type="checkbox"> Thunderstorm signal</label>
+    <div class="readout" id="readout"></div>
+  </div>
+</div>
+
+<script src="../js/sky.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LOC = { lat: 39.75, lon: -105.00 }; // placeholder; the lab only uses it for the sun's position
+  var PRESETS = {
+    'clear-day': { hour: 13, cloud: 5, precip: '', wind: 5, temp: 64, thunder: 0 },
+    'sunset':    { hour: 16.6, cloud: 20, precip: '', wind: 6, temp: 55, thunder: 0 },
+    'night':     { hour: 22, cloud: 10, precip: '', wind: 3, temp: 38, thunder: 0 },
+    'cloudy':    { hour: 11, cloud: 75, precip: '', wind: 9, temp: 50, thunder: 0 },
+    'rain':      { hour: 15, cloud: 90, precip: 'rain', wind: 8, temp: 46, thunder: 0 },
+    'snow':      { hour: 10, cloud: 90, precip: 'snow', wind: 6, temp: 28, thunder: 0 },
+    'windy':     { hour: 14, cloud: 35, precip: '', wind: 22, temp: 58, thunder: 0 },
+    'storm':     { hour: 17.2, cloud: 95, precip: 'rain', wind: 18, temp: 66, thunder: 1 },
+    'frigid':    { hour: 8, cloud: 15, precip: '', wind: 4, temp: 6, thunder: 0 },
+    'blizzard':  { hour: 9, cloud: 100, precip: 'snow', wind: 26, temp: 12, thunder: 0 }
+  };
+  function $(id) { return document.getElementById(id); }
+  function q(name) { var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search); return m ? decodeURIComponent(m[1]) : null; }
+  var st = PRESETS[q('preset') || 'clear-day'] || PRESETS['clear-day'];
+  st = JSON.parse(JSON.stringify(st));
+  ['hour', 'cloud', 'wind', 'temp'].forEach(function (k) { if (q(k) != null) { st[k] = +q(k); } });
+  if (q('precip') != null) { st.precip = q('precip'); }
+  if (q('thunder') != null) { st.thunder = +q('thunder'); }
+
+  function clockText(h) {
+    var hh = Math.floor(h), mm = Math.round((h - hh) * 60), ap = hh < 12 || hh === 24 ? 'AM' : 'PM';
+    var h12 = hh % 12; if (h12 === 0) { h12 = 12; }
+    var s = h12 + ':' + (mm < 10 ? '0' : '') + mm, out = '';
+    for (var i = 0; i < s.length; i++) { out += '<span class="digit">' + s[i] + '</span>'; }
+    $('clock').innerHTML = out; $('ampm').innerHTML = ap;
+    return s + ' ' + ap;
+  }
+  function condName() {
+    if (st.thunder) { return 'Thunderstorms'; }
+    if (st.precip === 'rain') { return 'Rain'; }
+    if (st.precip === 'snow') { return 'Snow'; }
+    return st.cloud > 70 ? 'Cloudy' : (st.cloud > 25 ? 'Partly cloudy' : 'Clear');
+  }
+
+  function apply() {
+    var t = clockText(st.hour);
+    $('now').innerHTML = '<div class="now-top"><div class="now-temp">' + st.temp + '<sup>°</sup></div></div>' +
+      '<div class="now-cond">' + condName() + ' <span class="now-src">· lab</span></div>' +
+      '<div class="now-feels">Wind ' + st.wind + ' mph</div>' +
+      (st.thunder ? '<div class="alert-pill severe">Severe Thunderstorm Warning</div>' : '');
+    var d = new Date(); d.setHours(Math.floor(st.hour), Math.round((st.hour % 1) * 60), 0, 0);
+    var scene = { sunAlt: Sky.sunAltitude(d, LOC.lat, LOC.lon), cloud: st.cloud, precip: st.precip || null,
+      intensity: st.precip ? (st.wind > 20 ? 0.9 : 0.55) : 0, windMph: st.wind, windFrom: 270,
+      gustMph: Math.round(st.wind * 1.4), thunder: !!st.thunder, tempF: st.temp, leafMph: 12 };
+    Sky.setScene(scene);
+    $('hour').value = st.hour; $('hourv').innerHTML = t;
+    $('cloud').value = st.cloud; $('cloudv').innerHTML = st.cloud + '%';
+    $('wind').value = st.wind; $('windv').innerHTML = st.wind + ' mph';
+    $('temp').value = st.temp; $('tempv').innerHTML = st.temp + '°F';
+    $('p-' + (st.precip || 'none')).checked = true;
+    $('thunder').checked = !!st.thunder;
+    $('readout').innerHTML = 'sun altitude ' + scene.sunAlt.toFixed(1) + '° · leaves at ≥12 mph · icicles at ≤20°F';
+  }
+
+  Sky.init({ box: $('head'), clock: $('clock') });
+  // Debug: ?hide=motion|clock|now|bg hides one layer, to isolate rendering problems on the frame.
+  var hide = q('hide');
+  if (hide === 'motion') { document.querySelector('.sky-motion').style.display = 'none'; }
+  if (hide === 'clock') { document.querySelector('.clock-block').style.visibility = 'hidden'; }
+  if (hide === 'now') { $('now').style.visibility = 'hidden'; }
+  var html = '';
+  for (var k in PRESETS) { if (PRESETS.hasOwnProperty(k)) { html += '<button data-p="' + k + '">' + k + '</button>'; } }
+  $('presets').innerHTML = html;
+  $('presets').addEventListener('click', function (e) {
+    var p = e.target.getAttribute('data-p'); if (!p) { return; }
+    st = JSON.parse(JSON.stringify(PRESETS[p])); apply();
+  });
+  ['hour', 'cloud', 'wind', 'temp'].forEach(function (k) {
+    $(k).addEventListener('input', function () { st[k] = +$(k).value; apply(); });
+  });
+  ['none', 'rain', 'snow'].forEach(function (k) {
+    $('p-' + k).addEventListener('change', function () { st.precip = k === 'none' ? '' : k; apply(); });
+  });
+  $('thunder').addEventListener('change', function () { st.thunder = $('thunder').checked ? 1 : 0; apply(); });
+  apply();
+  if (hide === 'bg') { $('head').style.backgroundImage = 'none'; }
+})();
+</script>
+</body>
+</html>

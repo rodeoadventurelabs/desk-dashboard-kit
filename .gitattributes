@@ -1,0 +1,8 @@
+# Normalize line endings in the repo (LF), except Windows scripts.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.webp binary
+*.zip binary
