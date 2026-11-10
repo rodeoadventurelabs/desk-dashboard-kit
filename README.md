@@ -95,3 +95,7 @@ Push to `main`; Netlify deploys automatically (about 20 seconds). Branches get p
 - Map coordinates in `config.js` are rounded to ~1 km. Exact ones stay in git-ignored `private/`.
 - The kiosk logs URLs without their query string, so the key never appears in the frame's log.
 - The frame's vendor apps (which accept root commands from the vendor's server) are disabled; see [docs/frame-setup-log.md](docs/frame-setup-log.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Rodeo Adventure Labs, LLC. The kiosk patch in [kiosk/](kiosk/) modifies [wesbos/photo-frame-dashboard](https://github.com/wesbos/photo-frame-dashboard), also MIT ([kiosk/UPSTREAM-LICENSE](kiosk/UPSTREAM-LICENSE)). Data and map services have their own terms; see [docs/SETUP.md → Licensing and limits](docs/SETUP.md#licensing-and-limits).
